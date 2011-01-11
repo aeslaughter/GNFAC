@@ -48,6 +48,8 @@ function GNFAC(varargin)  % -*-matlab-*-
         name{14}= {'bigsky/summit','BSsummit',1};
         name{15}= {'bigsky/bavaria','BSbavaria',1};
         
+        
+        
 % 2 - DETERMINE/CREATE CURRENT SEASON ARCHIVE FOLDER
     fldr = [cd,filesep,'db',filesep,getfolder,filesep];
     if ~exist(fldr,'dir'); mkdir(fldr); end
@@ -200,13 +202,32 @@ function data = read_gnfac(str)
 % 2 - DETERMINE THE LOCATION OF WEATHER DATA
     idx1 = strmatch('---',A);           % Beginning of data
     idx2 = strmatch('</pre></div>',lower(A));   % End of data
-    C = deblank(A(idx1(1)+1:idx2(1)-1));      % Removes extrenous whitespaces
+    idx3 = strmatch('page',lower(A));
     
 % 3 - REMOVE EXTRA BLANK LINES IN DATA
-    idx3 = strmatch('',C,'exact');
-    if ~isempty(idx3);  
-        C = C(1:idx3(1)-1);
+    % 3.1 - Case for single page of data (i.e., idx3 is empty)
+    if isempty(idx3);
+        C = deblank(A(idx1(1)+1:idx2(1)-1));      % Removes extrenous whitespaces
+        idx4 = strmatch('',C,'exact');
+        if ~isempty(idx4);  
+            C = C(1:idx4(1)-1);
+        end
+        
+    % 3.2 - Case for multipage data    
+    else
+        C = {};
+        for i = 1:length(idx1);
+            c = deblank(A(idx1(i)+1:idx3(i)-1));      % Removes extrenous whitespaces    
+            
+            idx4 = strmatch('',c,'exact');
+            if ~isempty(idx4);  
+                C = [C; c(1:idx4(1)-1)];
+            end
+        
+        end
     end
+
+    % 3.3 - Return if no data was found
     if isempty(C); data = []; return; end
     
 % 4 - CONVERT TEXT INTO A CHARACTER ARRAY
